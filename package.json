@@ -1,0 +1,14 @@
+{
+  "devDependencies": {
+    "concurrently": "^9.2.0"
+  },
+  "scripts": {
+    "start": "concurrently \"nodemon server.js --prefix backend\" \"npm run dev --prefix frontend\"",
+    "server": "nodemon server.js --prefix backend",
+    "client": "npm run dev --prefix frontend"
+  },
+  "dependencies": {
+    "file-saver": "^2.0.5",
+    "xlsx": "^0.18.5"
+  }
+}
