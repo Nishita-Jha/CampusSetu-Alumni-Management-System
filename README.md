@@ -101,3 +101,8 @@ npm run dev
 - Admin can manage alumni data, events, and announcements.
 - Alumni can register, update profiles, and stay connected with the institution.
 - The platform enables structured communication and long-term alumni engagement.
+
+---
+**⭐ If you found this project helpful, feel free to star the repository !!**
+
+**⭐ If you found this project helpful, feel free to star the repository !!**
