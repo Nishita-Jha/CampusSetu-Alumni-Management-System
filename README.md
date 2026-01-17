@@ -80,9 +80,9 @@ npm install
 ### 3️⃣ Environment Configuration
 Create a .env file in the backend directory and configure:
 ```env
-PORT=5000
-MONGO_URI=your_database_url
-JWT_SECRET=your_secret_key
+PORT = 5000
+MONGO_URI = your_database_url
+JWT_SECRET = your_secret_key
 ```
 
 ### 4️⃣ Run the Application
