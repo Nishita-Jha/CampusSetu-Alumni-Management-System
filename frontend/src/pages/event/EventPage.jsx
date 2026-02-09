@@ -25,6 +25,9 @@ export default function EventPage() {
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
 
+  // 🔹 Added ONLY for image preview
+  const [previewImage, setPreviewImage] = useState(null);
+
   const navigate = useNavigate();
 
   // ✅ Fetch current user
@@ -192,7 +195,6 @@ export default function EventPage() {
     <div className="min-h-screen bg-gradient-to-b from-indigo-50 via-blue-50 to-purple-50">
       <LinkedInHeader />
 
-      {/* 🔍 Search Section */}
       <div className="max-w-7xl mx-auto p-6 grid grid-cols-1 md:grid-cols-4 gap-8">
         <div className="md:col-span-1 sticky top-24 h-fit bg-white/80 backdrop-blur-lg border border-indigo-100 rounded-3xl shadow-lg p-6">
           <h2 className="text-lg font-semibold text-indigo-800 mb-5 text-center">
@@ -206,6 +208,7 @@ export default function EventPage() {
             onChange={(e) => setSearchTerm(e.target.value)}
             className="border border-indigo-200 p-2 rounded-lg w-full mb-3 focus:ring-2 focus:ring-indigo-300 outline-none"
           />
+
           <label className="text-sm text-gray-600">Start Date</label>
           <input
             type="date"
@@ -213,6 +216,7 @@ export default function EventPage() {
             onChange={(e) => setStartDate(e.target.value)}
             className="border border-indigo-200 p-2 rounded-lg w-full mb-3"
           />
+
           <label className="text-sm text-gray-600">End Date</label>
           <input
             type="date"
@@ -220,6 +224,7 @@ export default function EventPage() {
             onChange={(e) => setEndDate(e.target.value)}
             className="border border-indigo-200 p-2 rounded-lg w-full mb-5"
           />
+
           <button
             onClick={handleSearch}
             className="w-full bg-gradient-to-r from-indigo-500 to-blue-600 text-white py-2 rounded-full font-semibold hover:scale-105 transition-transform"
@@ -228,7 +233,6 @@ export default function EventPage() {
           </button>
         </div>
 
-        {/* 📅 Event List */}
         <div className="md:col-span-3">
           {filteredEvents.length === 0 ? (
             <p className="text-center text-gray-500 mt-16 text-lg">
@@ -241,12 +245,23 @@ export default function EventPage() {
                 className="bg-gradient-to-r from-blue-100 via-indigo-100 to-purple-100 rounded-3xl overflow-hidden shadow-xl mb-10"
               >
                 {event.image && (
-                  <img
-                    src={event.image}
-                    alt="Event Banner"
-                    className="w-full h-80 object-cover"
-                  />
+                  <div
+                    className="relative cursor-pointer group"
+                    onClick={() => setPreviewImage(event.image)}
+                  >
+                    <img
+                      src={event.image}
+                      alt="Event Banner"
+                      className="w-full h-80 object-cover"
+                    />
+                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                      <span className="text-white text-lg font-semibold">
+                        👆 Tap to View
+                      </span>
+                    </div>
+                  </div>
                 )}
+
                 <div className="p-6">
                   <h2 className="text-2xl font-bold text-indigo-800 mb-2">
                     {event.title}
@@ -267,7 +282,6 @@ export default function EventPage() {
 
                 <Separator className="my-2" />
 
-                {/* Participate Buttons */}
                 <div className="flex justify-between items-center px-6 pb-5 text-sm">
                   <span className="text-gray-700">
                     👥 Participants: {event.participants.length}
@@ -294,7 +308,6 @@ export default function EventPage() {
                     ))}
                 </div>
 
-                {/* Admin Actions */}
                 {(currentUser?._id === event.createdBy?._id ||
                   currentUser?.role === "admin") && (
                   <div className="flex justify-center gap-3 pb-6">
@@ -320,7 +333,6 @@ export default function EventPage() {
         </div>
       </div>
 
-      {/* ➕ Floating Add Button */}
       {(currentUser?.role === "alumni" || currentUser?.role === "admin") && (
         <button
           onClick={() => setShowPopup(true)}
@@ -330,46 +342,23 @@ export default function EventPage() {
         </button>
       )}
 
-      {/* 👥 Participants Popup */}
-      {showParticipants && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center">
-          <div className="bg-white rounded-lg p-6 w-96 shadow-lg">
-            <h2 className="text-lg font-bold mb-4 text-center">
-              Participants – {selectedEventTitle}
-            </h2>
-
-            {participants.length === 0 ? (
-              <p className="text-gray-500 text-center">No participants yet.</p>
-            ) : (
-              <ul className="max-h-60 overflow-y-auto divide-y divide-gray-200">
-                {participants.map((p) => (
-                  <li key={p._id} className="py-3 text-sm text-gray-800">
-                    <p className="font-semibold text-blue-700">{p.username}</p>
-                    <p className="text-gray-600 text-xs">Email: {p.email}</p>
-                    <p className="text-gray-500 text-xs italic">
-                      Role: {p.role}
-                    </p>
-                  </li>
-                ))}
-              </ul>
-            )}
-
-            <div className="mt-4 text-center flex justify-center gap-3">
-              {participants.length > 0 && (
-                <button
-                  onClick={downloadParticipantsExcel}
-                  className="bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded-md text-sm"
-                >
-                  Download Excel
-                </button>
-              )}
-              <button
-                onClick={() => setShowParticipants(false)}
-                className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm"
-              >
-                Close
-              </button>
-            </div>
+      {previewImage && (
+        <div
+          className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center"
+          onClick={() => setPreviewImage(null)}
+        >
+          <div className="relative max-w-4xl w-full p-4">
+            <img
+              src={previewImage}
+              alt="Event Poster Preview"
+              className="w-full max-h-[85vh] object-contain rounded-xl shadow-2xl"
+            />
+            <button
+              onClick={() => setPreviewImage(null)}
+              className="absolute top-4 right-4 bg-white text-black rounded-full px-3 py-1 font-bold"
+            >
+              ✕
+            </button>
           </div>
         </div>
       )}

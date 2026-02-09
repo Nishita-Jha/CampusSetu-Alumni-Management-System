@@ -1,4 +1,4 @@
-// /mnt/data/ProfilePage.jsx
+// ProfilePage.jsx
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
@@ -44,7 +44,7 @@ export default function ProfilePage() {
     jobTitle: "",
     employmentType: "",
     company: "",
-    currentlyWorking: false,
+    isCurrent: false,
     startMonth: "",
     startYear: "",
     endMonth: "",
@@ -63,8 +63,17 @@ export default function ProfilePage() {
   const [requestedEmail, setRequestedEmail] = useState("");
   const [requestReason, setRequestReason] = useState("");
 
+  const [expanded, setExpanded] = useState([]);
+  const isExpanded = (index) => expanded.includes(index);
+  const toggleExpand = (index) => {
+    setExpanded((prev) =>
+      prev.includes(index)
+        ? prev.filter((i) => i !== index)
+        : [...prev, index]
+    );
+  };
+
   // keeps track of which experience indexes are expanded
-  const [expanded, setExpanded] = useState([]); // array of indexes
   const navigate = useNavigate();
 
   // ---------- Constants ----------
@@ -104,6 +113,7 @@ export default function ProfilePage() {
     "July","August","September","October","November","December",
   ];
   const years = Array.from({ length: 60 }, (_, i) => new Date().getFullYear() - i);
+  const [showAddExperience, setShowAddExperience] = useState(false);
 
   // -------------------------
   // Main profile handlers
@@ -179,22 +189,17 @@ const sendEmailChangeRequest = async () => {
     });
   };
 
-  const addExperience = () => {
-    setProfile((prev) => ({
-      ...prev,
-      experience: [...prev.experience, { ...newExperience }],
-    }));
-    // expand the newly added one (index = old length)
-    setExpanded((prev) => [...prev, profile.experience.length]);
-  };
-
   const removeExperience = (index) => {
     setProfile((prev) => ({
       ...prev,
       experience: prev.experience.filter((_, i) => i !== index),
     }));
     // remove from expanded if present
-    setExpanded((prev) => prev.filter((i) => i !== index));
+   setExpanded((prev) =>
+      prev
+        .filter((i) => i !== index)
+        .map((i) => (i > index ? i - 1 : i))
+    );
   };
 
   const handleMediaUpload = (index, file) => {
@@ -217,7 +222,7 @@ const sendEmailChangeRequest = async () => {
       alert("File size exceeds 100MB limit.");
       return;
     }
-    handleExperienceChange(index, "media", file.name);
+    handleExperienceChange(index, "media", file);
   };
 
   // -------------------------
@@ -360,40 +365,55 @@ const sendEmailChangeRequest = async () => {
     }
   };
 
-  const handleAddExperience = () => {
-    if (!newExperience.jobTitle && !newExperience.company) {
-      alert("Please add at least a job title or company.");
-      return;
+  const handleAddExperience = async () => {
+    try {
+      // remove File object before sending
+      const sanitizedExperience = {
+        ...newExperience,
+        media: newExperience.media instanceof File
+          ? newExperience.media.name
+          : "",
+      };
+
+      const updatedExperienceArray = [
+        ...profile.experience,
+        sanitizedExperience,
+      ];
+
+      await axios.put(
+        "http://localhost:5000/api/profile/experience",
+        { experience: updatedExperienceArray },
+        { withCredentials: true }
+      );
+
+      setProfile((prev) => ({
+        ...prev,
+        experience: updatedExperienceArray,
+      }));
+
+      setNewExperience({
+        jobTitle: "",
+        employmentType: "",
+        company: "",
+        isCurrent: false,
+        startMonth: "",
+        startYear: "",
+        endMonth: "",
+        endYear: "",
+        country: "",
+        state: "",
+        city: "",
+        locationType: "",
+        description: "",
+        media: null,
+      });
+
+      setShowAddExperience(false);
+    } catch (err) {
+      console.error("Error saving experience:", err);
+      alert("Failed to save experience");
     }
-
-    setProfile((prev) => ({
-      ...prev,
-      experience: [...prev.experience, { ...newExperience }],
-    }));
-
-    // Reset the new experience form
-    setNewExperience({
-      jobTitle: "",
-      employmentType: "",
-      company: "",
-      currentlyWorking: false,
-      startMonth: "",
-      startYear: "",
-      endMonth: "",
-      endYear: "",
-      country: "",
-      state: "",
-      city: "",
-      locationType: "",
-      description: "",
-      media: null,
-    });
-
-    // Clear dependent dropdowns
-    setStates([]);
-    setCities([]);
   };
-
 
   const handleDeleteSkill = (index) => {
     setProfile((prev) => ({
@@ -402,14 +422,12 @@ const sendEmailChangeRequest = async () => {
     }));
   };
 
-  const currentExperience = profile.experience.find(
-    (exp) => exp.isCurrent || exp.currentlyWorking
-  );
+  const currentExperience = profile.experience.find(exp => exp.isCurrent);
 
   const handleNewExperienceChange = (e) => {
     const { name, value, type, checked } = e.target;
     if (type === "checkbox") {
-      setNewExperience((prev) => ({ ...prev, [name]: checked }));
+      setNewExperience((prev) => ({ ...prev, [name]: type === "checkbox" ? checked : value, }));
     } else {
       setNewExperience((prev) => ({ ...prev, [name]: value }));
     }
@@ -484,31 +502,6 @@ const sendEmailChangeRequest = async () => {
     }
 
     setNewExperience((prev) => ({ ...prev, media: file }));
-  };
-
-  const handleSaveExperiences = async () => {
-    try {
-      setLoading(true);
-      await axios.put(
-        "http://localhost:5000/api/profile/experience",
-        { experience: profile.experience },
-        { withCredentials: true }
-      );
-      alert("Experiences saved successfully!");
-    } catch (err) {
-      console.error(err);
-      alert("Error saving experiences");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // -------------------------
-  // Accordion helpers
-  // -------------------------
-  const isExpanded = (index) => expanded.includes(index);
-  const toggleExpand = (index) => {
-    setExpanded((prev) => (prev.includes(index) ? prev.filter((i) => i !== index) : [...prev, index]));
   };
 
   // -------------------------
@@ -689,25 +682,27 @@ const sendEmailChangeRequest = async () => {
               {/* Experience feed-style card */}
               <div className="space-y-4">
                 <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition">
-                  <div className="flex items-center justify-between">
-                    <h2 className="text-xl font-semibold text-gray-800">Experience</h2>
-                    <div className="flex items-center gap-2">
-                      <button type="button" onClick={addExperience} className="px-3 py-1 bg-gradient-to-r from-cyan-600 to-blue-500 text-white rounded-md hover:scale-105 transition">+ Blank</button>
-                      <button type="button" onClick={handleSaveExperiences} className="px-3 py-1 bg-green-600 text-white rounded-md hover:scale-105 transition">Save Experiences</button>
-                    </div>
-                  </div>
+                <div className="flex items-center justify-between">
+                  <h2 className="text-xl font-semibold text-gray-800">Experience</h2>
+
+                  <button
+                    type="button"
+                    onClick={() => setShowAddExperience(true)}
+                    className="px-3 py-1 text-sm bg-cyan-600 text-white rounded-md hover:bg-cyan-700 transition"
+                  >
+                    + Add Experience
+                  </button>
+                </div>
 
                   {/* Existing experiences as accordion / feed items */}
                   <div className="mt-4 space-y-3">
                     {profile.experience && profile.experience.length > 0 ? (
                       profile.experience.map((exp, idx) => {
                         const title = exp.jobTitle || exp.company || `Experience ${idx + 1}`;
-
                         const subtitle = exp.company ? exp.company : "";
-                        const dateRange = exp.isCurrent || exp.currentlyWorking
-  ? `${exp.startMonth || ""} ${exp.startYear || ""} - Present`
-  : `${exp.startMonth || ""} ${exp.startYear || ""}${exp.startYear ? " - " : ""}${exp.endMonth || ""} ${exp.endYear || ""}`;
-
+                        const dateRange = exp.isCurrent || exp.isCurrent
+                          ? `${exp.startMonth || ""} ${exp.startYear || ""} - Present`
+                          : `${exp.startMonth || ""} ${exp.startYear || ""}${exp.startYear ? " - " : ""}${exp.endMonth || ""} ${exp.endYear || ""}`;
                         return (
                           <div key={idx} className="bg-white border border-gray-100 rounded-lg shadow-sm overflow-hidden hover:shadow-md transition">
                             <div className="flex items-center justify-between p-4 cursor-pointer" onClick={() => toggleExpand(idx)}>
@@ -721,8 +716,7 @@ const sendEmailChangeRequest = async () => {
                                 <div className="transform transition-transform duration-200" aria-hidden>
                                   {/* chevron */}
                                   <svg
-  className={`w-5 h-5 ${isExpanded(idx) ? "rotate-180" : "rotate-0"}`}
-
+                                    className={`w-5 h-5 ${isExpanded(idx) ? "rotate-180" : "rotate-0"}`}
                                     viewBox="0 0 24 24"
                                     fill="none"
                                     xmlns="http://www.w3.org/2000/svg"
@@ -734,20 +728,22 @@ const sendEmailChangeRequest = async () => {
                             </div>
 
                             {/* Expandable content */}
-                            <div
-  className={`px-4 pb-4 transition-[max-height,opacity] duration-300 ease-in-out overflow-hidden ${isExpanded(idx) ? "max-h-[1200px] opacity-100" : "max-h-0 opacity-0"}`}
->
-
+                            <div className={`px-4 pb-4 transition-[max-height,opacity] duration-300 ease-in-out overflow-hidden ${isExpanded(idx) ? "max-h-[1200px] opacity-100" : "max-h-0 opacity-0"}`}>
                               <div className="grid md:grid-cols-2 gap-3 mt-3">
                                 <Input placeholder="Job Title" value={exp.jobTitle} onChange={(e) => handleExperienceChange(idx, "jobTitle", e.target.value)} />
                                 <Input placeholder="Company" value={exp.company} onChange={(e) => handleExperienceChange(idx, "company", e.target.value)} />
-                                <select value={exp.employmentType || ""} onChange={(e) => handleExperienceChange(idx, "employmentType", e.target.value)} className="border rounded-md p-2">
+                                <select value={typeof exp.employmentType === "string" ? exp.employmentType : ""} onChange={(e) => handleExperienceChange(idx, "employmentType", e.target.value)} className="border rounded-md p-2">
                                   <option value="">Employment Type</option>
                                   {employmentTypes.map((t) => <option key={t} value={t}>{t}</option>)}
                                 </select>
-
                                 <label className="flex items-center gap-2">
-                                  <input type="checkbox" checked={!!exp.isCurrent} onChange={(e) => handleExperienceChange(idx, "isCurrent", e.target.checked)} />
+                                  <input
+                                    type="checkbox"
+                                    checked={!!exp.isCurrent}
+                                    onChange={(e) =>
+                                      handleExperienceChange(idx, "isCurrent", e.target.checked)
+                                  }
+                                />
                                   <span className="text-sm text-gray-600">I am currently working in this role</span>
                                 </label>
                               </div>
@@ -785,17 +781,29 @@ const sendEmailChangeRequest = async () => {
                               </div>
 
                               <div className="grid md:grid-cols-3 gap-3 mt-3">
-                                <select value={exp.country || ""} onChange={(e) => handleExperienceChange(idx, "country", e.target.value)} className="border rounded-md p-2">
+                                <select
+                                  value={typeof exp.country === "string" ? exp.country : ""}
+                                  onChange={(e) => handleExperienceChange(idx, "country", e.target.value)}
+                                  className="border rounded-md p-2"
+                                >
                                   <option value="">Country</option>
                                   {Country.getAllCountries().map((c) => <option key={c.isoCode} value={c.name}>{c.name}</option>)}
                                 </select>
 
-                                <select value={exp.state || ""} onChange={(e) => handleExperienceChange(idx, "state", e.target.value)} className="border rounded-md p-2">
+                                <select
+                                  value={typeof exp.state === "string" ? exp.state : ""}
+                                  onChange={(e) => handleExperienceChange(idx, "state", e.target.value)}
+                                  className="border rounded-md p-2"
+                                >
                                   <option value="">State</option>
                                   {State.getStatesOfCountry(Country.getAllCountries().find((c) => c.name === exp.country)?.isoCode || "").map((s) => <option key={s.isoCode} value={s.name}>{s.name}</option>)}
                                 </select>
 
-                                <select value={exp.city || ""} onChange={(e) => handleExperienceChange(idx, "city", e.target.value)} className="border rounded-md p-2">
+                                <select
+                                  value={typeof exp.city === "string" ? exp.city : ""}
+                                  onChange={(e) => handleExperienceChange(idx, "city", e.target.value)}
+                                  className="border rounded-md p-2"
+                                >
                                   <option value="">City</option>
                                   {City.getCitiesOfState(
                                     Country.getAllCountries().find((c) => c.name === exp.country)?.isoCode || "",
@@ -805,7 +813,7 @@ const sendEmailChangeRequest = async () => {
                               </div>
 
                               <div className="mt-3">
-                                <select value={exp.locationType || ""} onChange={(e) => handleExperienceChange(idx, "locationType", e.target.value)} className="w-full border rounded-md p-2">
+                                <select name="locationType" value={newExperience.locationType || ""} onChange={handleNewExperienceChange} className="w-full border rounded-md p-2">
                                   <option value="">Location Type</option>
                                   {locationTypes.map((t) => <option key={t} value={t}>{t}</option>)}
                                 </select>
@@ -818,17 +826,27 @@ const sendEmailChangeRequest = async () => {
                               <div className="mt-3">
                                 <label className="block text-sm text-gray-600 mb-1">Upload Media</label>
                                 <input type="file" accept=".pdf,.doc,.docx,.ppt,.pptx,.jpg,.jpeg,.png,.gif" onChange={(e) => handleMediaUpload(idx, e.target.files[0])} />
-                                {exp.media && <div className="text-xs text-gray-500 mt-1">Uploaded: {exp.media}</div>}
+                                {exp.media instanceof File && (
+                                  <p className="text-xs text-gray-500">{exp.media.name}</p>
+                                )}
+                                {exp.media instanceof File && (
+                                  <img
+                                    src={URL.createObjectURL(exp.media)}
+                                    alt="preview"
+                                    className="h-20 rounded"
+                                  />
+                                )}
                               </div>
                             </div>
                           </div>
                         );
                       })
-                    ) : <div className="text-gray-500 text-sm">No experience added yet. Use <span className="font-medium">+ Blank</span> or the "Add Experience" form below.</div>}
+                    ) : <div className="text-gray-500 text-sm">No experience added yet. Click “Add Experience” to get started.</div>}
                   </div>
                 </div>
 
                 {/* Add Experience Card (feed-style) */}
+                {showAddExperience && (
                 <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition">
                   <h3 className="text-lg font-semibold text-gray-800 mb-3">Add Experience</h3>
 
@@ -838,34 +856,38 @@ const sendEmailChangeRequest = async () => {
                   </div>
 
                   <div className="mt-3">
-                    <select name="employmentType" value={newExperience.employmentType} onChange={handleNewExperienceChange} className="w-full border rounded-md p-2">
+                    <select name="employmentType"   
+                      value={typeof newExperience.employmentType === "string" ? newExperience.employmentType : ""}
+                      onChange={(e) =>
+                        handleNewExperienceChange(e)
+                      }>
                       <option value="">Employment Type</option>
                       {employmentTypes.map((t) => <option key={t} value={t}>{t}</option>)}
                     </select>
                   </div>
 
                   <label className="flex items-center gap-2 mt-3">
-                    <input type="checkbox" name="currentlyWorking" checked={!!newExperience.currentlyWorking} onChange={handleNewExperienceChange} />
+                    <input type="checkbox" name="isCurrent" checked={!!newExperience.isCurrent} onChange={handleNewExperienceChange} />
                     <span className="text-sm">I am currently working in this role</span>
                   </label>
 
                   <div className="grid md:grid-cols-4 gap-2 mt-3">
-                    <select name="startMonth" value={newExperience.startMonth} onChange={handleNewExperienceChange} className="border rounded-md p-2">
+                    <select name="startMonth" value={typeof newExperience.startMonth === "string" ? newExperience.startMonth : ""} onChange={handleNewExperienceChange} className="border rounded-md p-2">
                       <option value="">Start Month</option>
                       {months.map((m) => <option key={m} value={m}>{m}</option>)}
                     </select>
-                    <select name="startYear" value={newExperience.startYear} onChange={handleNewExperienceChange} className="border rounded-md p-2">
+                    <select name="startYear" value={typeof newExperience.startYear === "string" ? newExperience.startYear : ""} onChange={handleNewExperienceChange} className="border rounded-md p-2">
                       <option value="">Start Year</option>
                       {Array.from({ length: new Date().getFullYear() - 1970 + 1 }, (_, i) => 1970 + i).reverse().map((y) => <option key={y} value={y}>{y}</option>)}
                     </select>
 
-                    {!newExperience.currentlyWorking && (
+                    {!newExperience.isCurrent && (
                       <>
-                        <select name="endMonth" value={newExperience.endMonth} onChange={handleNewExperienceChange} className="border rounded-md p-2">
+                        <select name="endMonth" value={typeof newExperience.endMonth === "string" ? newExperience.endMonth : ""} onChange={handleNewExperienceChange} className="border rounded-md p-2">
                           <option value="">End Month</option>
                           {months.map((m) => <option key={m} value={m}>{m}</option>)}
                         </select>
-                        <select name="endYear" value={newExperience.endYear} onChange={handleNewExperienceChange} className="border rounded-md p-2">
+                        <select name="endYear" value={typeof newExperience.endYear === "string" ? newExperience.endYear : ""} onChange={handleNewExperienceChange} className="border rounded-md p-2">
                           <option value="">End Year</option>
                           {Array.from({ length: new Date().getFullYear() - 1970 + 1 }, (_, i) => 1970 + i).reverse().map((y) => <option key={y} value={y}>{y}</option>)}
                         </select>
@@ -891,12 +913,18 @@ const sendEmailChangeRequest = async () => {
                   </div>
 
                   <div className="mt-3">
-                    <select name="locationType" value={newExperience.locationType} onChange={handleNewExperienceChange} className="w-full border rounded-md p-2">
+                    <select
+                      name="locationType"
+                      value={newExperience.locationType || ""}
+                      onChange={handleNewExperienceChange}
+                      className="w-full border rounded-md p-2"
+                    >
                       <option value="">Location Type</option>
-                      {locationTypes.map((t) => <option key={t} value={t}>{t}</option>)}
+                      {locationTypes.map((t) => (
+                        <option key={t} value={t}>{t}</option>
+                      ))}
                     </select>
                   </div>
-
                   <div className="mt-3">
                     <textarea name="description" maxLength={200} placeholder="Describe your role (max 200 characters)" value={newExperience.description} onChange={(e) => setNewExperience((prev) => ({ ...prev, description: e.target.value }))} className="w-full border rounded-md p-2" />
                   </div>
@@ -907,10 +935,43 @@ const sendEmailChangeRequest = async () => {
                     <p className="text-xs text-gray-500 mt-1">Supported: PDF, PPT, DOC, JPG, PNG, GIF | Max size 100MB</p>
                   </div>
 
-                  <div className="mt-4 flex justify-end">
-                    <button type="button" onClick={handleAddExperience} className="px-4 py-2 bg-gradient-to-r from-cyan-600 to-blue-500 text-white rounded-md hover:scale-105 transition">Add Experience</button>
-                  </div>
+                <div className="mt-4 flex justify-end gap-3">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowAddExperience(false);
+                      setNewExperience({
+                        jobTitle: "",
+                        employmentType: "",
+                        company: "",
+                        isCurrent: false,
+                        startMonth: "",
+                        startYear: "",
+                        endMonth: "",
+                        endYear: "",
+                        country: "",
+                        state: "",
+                        city: "",
+                        locationType: "",
+                        description: "",
+                        media: null,
+                      });
+                    }}
+                    className="px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 transition"
+                  >
+                    Cancel
+                  </button>
+
+              <button
+                type="button"
+                onClick={handleAddExperience}
+                className="px-4 py-2 bg-gradient-to-r from-cyan-600 to-blue-500 text-white rounded-md hover:scale-105 transition"
+              >
+                Save Experience
+              </button>
                 </div>
+                </div>
+                )}
               </div>
             </div>
 

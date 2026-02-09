@@ -1,3 +1,4 @@
+//User.js
 import mongoose from "mongoose";
 
 const userSchema = new mongoose.Schema(
@@ -5,12 +6,13 @@ const userSchema = new mongoose.Schema(
     username: { type: String, required: true, unique: true },
     firstname: { type: String },
     lastname: { type: String },
+    contact_no: { type: String },
     email: { type: String, required: true, unique: true },
     password: { type: String, required: true },
     role: { type: String, enum: ["student", "alumni", "admin"], required: true },
     graduation_year: { type: Number },
     course: { type: String, default: "" },
-    department: { type: String, default: "" },
+    department: [String],
     bio: { type: String },
     company: { type: String },
     job_title: { type: String },

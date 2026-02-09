@@ -1,3 +1,4 @@
+//profileRoutes.js
 import express from "express";
 import multer from "multer";
 import path from "path";
@@ -114,6 +115,37 @@ router.delete("/photo", authMiddleware, async (req, res) => {
   } catch (err) {
     console.error("❌ Error deleting profile photo:", err);
     res.status(500).json({ message: "Server error while deleting photo" });
+  }
+});
+
+/* ---------------------- UPDATE EXPERIENCE ---------------------- */
+router.put("/experience", authMiddleware, async (req, res) => {
+  try {
+    const { experience } = req.body;
+
+    if (!Array.isArray(experience)) {
+      return res.status(400).json({
+        message: "Experience must be an array",
+      });
+    }
+
+    const user = await User.findById(req.user._id);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    user.experience = experience; // matches schema exactly
+    await user.save();
+
+    res.status(200).json({
+      message: "Experience updated successfully",
+      experience: user.experience,
+    });
+  } catch (err) {
+    console.error("❌ Error updating experience:", err);
+    res.status(500).json({
+      message: "Server error while updating experience",
+    });
   }
 });
 
