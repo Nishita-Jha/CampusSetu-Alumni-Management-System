@@ -62,7 +62,7 @@ export default function ProfilePage() {
   const [showEmailRequest, setShowEmailRequest] = useState(false);
   const [requestedEmail, setRequestedEmail] = useState("");
   const [requestReason, setRequestReason] = useState("");
-
+  const [previewMedia, setPreviewMedia] = useState(null);
   const [expanded, setExpanded] = useState([]);
   const isExpanded = (index) => expanded.includes(index);
   const toggleExpand = (index) => {
@@ -140,16 +140,23 @@ const sendEmailChangeRequest = async () => {
     const { name, value } = e.target;
 
     if (name === "course") {
-      setProfile((prev) => ({
-        ...prev,
-        course: value,
-        department:
-          value === "PhD"
-            ? "Management and Engineering"
-            : value === "MBA"
-            ? []
-            : "",
-      }));
+      setProfile((prev) => {
+        let updatedDepartment = "";
+
+        if (value === "PhD") {
+          updatedDepartment = "Management and Engineering";
+        } else if (value === "MBA") {
+          updatedDepartment = [];
+        } else {
+          updatedDepartment = "";
+        }
+
+        return {
+          ...prev,
+          course: value,
+          department: updatedDepartment,
+        };
+      });
       return;
     }
 
@@ -204,6 +211,7 @@ const sendEmailChangeRequest = async () => {
 
   const handleMediaUpload = (index, file) => {
     if (!file) return;
+
     const allowedTypes = [
       "application/pdf",
       "application/msword",
@@ -214,15 +222,22 @@ const sendEmailChangeRequest = async () => {
       "image/png",
       "image/gif",
     ];
+
     if (!allowedTypes.includes(file.type)) {
       alert("Unsupported file format.");
       return;
     }
+
     if (file.size > 100 * 1024 * 1024) {
       alert("File size exceeds 100MB limit.");
       return;
     }
-    handleExperienceChange(index, "media", file);
+
+    setProfile((prev) => {
+      const updated = [...prev.experience];
+      updated[index] = { ...updated[index], media: file };
+      return { ...prev, experience: updated };
+    });
   };
 
   // -------------------------
@@ -367,51 +382,92 @@ const sendEmailChangeRequest = async () => {
 
   const handleAddExperience = async () => {
     try {
-      // remove File object before sending
-      const sanitizedExperience = {
-        ...newExperience,
-        media: newExperience.media instanceof File
-          ? newExperience.media.name
-          : "",
-      };
+      const formData = new FormData();
 
-      const updatedExperienceArray = [
-        ...profile.experience,
-        sanitizedExperience,
-      ];
+      formData.append("title", newExperience.jobTitle);
+      formData.append("company", newExperience.company);
+      formData.append(
+        "location",
+        `${newExperience.city}, ${newExperience.state}, ${newExperience.country}`
+      );
+      formData.append(
+        "startDate",
+        `${newExperience.startMonth} ${newExperience.startYear}`
+      );
+      formData.append(
+        "endDate",
+        newExperience.isCurrent
+          ? "Present"
+          : `${newExperience.endMonth} ${newExperience.endYear}`
+      );
+      formData.append("description", newExperience.description);
+
+      if (newExperience.media) {
+        formData.append("media", newExperience.media);
+      }
 
       await axios.put(
         "http://localhost:5000/api/profile/experience",
-        { experience: updatedExperienceArray },
-        { withCredentials: true }
+        formData,
+        {
+          withCredentials: true,
+          headers: { "Content-Type": "multipart/form-data" },
+        }
       );
 
-      setProfile((prev) => ({
-        ...prev,
-        experience: updatedExperienceArray,
-      }));
-
-      setNewExperience({
-        jobTitle: "",
-        employmentType: "",
-        company: "",
-        isCurrent: false,
-        startMonth: "",
-        startYear: "",
-        endMonth: "",
-        endYear: "",
-        country: "",
-        state: "",
-        city: "",
-        locationType: "",
-        description: "",
-        media: null,
-      });
-
+      alert("Experience added successfully!");
+      setRefresh((prev) => !prev);
       setShowAddExperience(false);
     } catch (err) {
-      console.error("Error saving experience:", err);
-      alert("Failed to save experience");
+      console.error("Error adding experience:", err);
+      alert("Failed to add experience");
+    }
+  };
+
+  const handleSaveExperienceChanges = async () => {
+    try {
+      setLoading(true);
+
+      const formData = new FormData();
+
+      profile.experience.forEach((exp, index) => {
+        formData.append(`experience[${index}][jobTitle]`, exp.jobTitle || "");
+        formData.append(`experience[${index}][company]`, exp.company || "");
+        formData.append(`experience[${index}][employmentType]`, exp.employmentType || "");
+        formData.append(`experience[${index}][isCurrent]`, exp.isCurrent || false);
+        formData.append(`experience[${index}][startMonth]`, exp.startMonth || "");
+        formData.append(`experience[${index}][startYear]`, exp.startYear || "");
+        formData.append(`experience[${index}][endMonth]`, exp.endMonth || "");
+        formData.append(`experience[${index}][endYear]`, exp.endYear || "");
+        formData.append(`experience[${index}][country]`, exp.country || "");
+        formData.append(`experience[${index}][state]`, exp.state || "");
+        formData.append(`experience[${index}][city]`, exp.city || "");
+        formData.append(`experience[${index}][locationType]`, exp.locationType || "");
+        formData.append(`experience[${index}][description]`, exp.description || "");
+
+        if (exp.media instanceof File) {
+          formData.append(`media_${index}`, exp.media);
+        } else {
+          formData.append(`experience[${index}][media]`, exp.media || "");
+        }
+      });
+
+      await axios.put(
+        "http://localhost:5000/api/profile/experience",
+        formData,
+        {
+          withCredentials: true,
+          headers: { "Content-Type": "multipart/form-data" },
+        }
+      );
+
+      alert("Experience updated successfully!");
+      setRefresh((prev) => !prev);
+    } catch (err) {
+      console.error("Error updating experience:", err);
+      alert("Failed to update experience");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -614,7 +670,11 @@ const sendEmailChangeRequest = async () => {
                         ) : (
                           <select
                             name="department"
-                            value={profile.department || ""}
+                            value={
+                              typeof profile.department === "string"
+                                ? profile.department
+                                : ""
+                            }
                             onChange={handleChange}
                             className="w-full border rounded-md p-2"
                           >
@@ -629,6 +689,9 @@ const sendEmailChangeRequest = async () => {
                   {/* skills */}
                   <div className="mt-4">
                     <label className="block text-sm text-gray-600 mb-2">Skills</label>
+                    <p className="text-xs text-gray-400 italic mb-2">
+                      Highlight your skills to enhance collaboration & mentorship connections.
+                    </p>
                     <div className="flex flex-wrap gap-2">
                       {profile.skills.map((s, i) => (
                         <div key={i} className="flex items-center gap-2 bg-gradient-to-r from-cyan-600 to-blue-500 text-white px-3 py-1 rounded-full text-sm hover:scale-105 transform transition">
@@ -682,17 +745,9 @@ const sendEmailChangeRequest = async () => {
               {/* Experience feed-style card */}
               <div className="space-y-4">
                 <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition">
-                <div className="flex items-center justify-between">
-                  <h2 className="text-xl font-semibold text-gray-800">Experience</h2>
-
-                  <button
-                    type="button"
-                    onClick={() => setShowAddExperience(true)}
-                    className="px-3 py-1 text-sm bg-cyan-600 text-white rounded-md hover:bg-cyan-700 transition"
-                  >
-                    + Add Experience
-                  </button>
-                </div>
+               <div className="flex items-center justify-between">
+                <h2 className="text-xl font-semibold text-gray-800">Experience</h2>
+               </div>
 
                   {/* Existing experiences as accordion / feed items */}
                   <div className="mt-4 space-y-3">
@@ -813,10 +868,18 @@ const sendEmailChangeRequest = async () => {
                               </div>
 
                               <div className="mt-3">
-                                <select name="locationType" value={newExperience.locationType || ""} onChange={handleNewExperienceChange} className="w-full border rounded-md p-2">
-                                  <option value="">Location Type</option>
-                                  {locationTypes.map((t) => <option key={t} value={t}>{t}</option>)}
-                                </select>
+                              <select
+                                value={exp.locationType || ""}
+                                onChange={(e) =>
+                                  handleExperienceChange(idx, "locationType", e.target.value)
+                                }
+                                className="w-full border rounded-md p-2"
+                              >
+                                <option value="">Location Type</option>
+                                {locationTypes.map((t) => (
+                                  <option key={t} value={t}>{t}</option>
+                                ))}
+                              </select>
                               </div>
 
                               <div className="mt-3">
@@ -826,15 +889,25 @@ const sendEmailChangeRequest = async () => {
                               <div className="mt-3">
                                 <label className="block text-sm text-gray-600 mb-1">Upload Media</label>
                                 <input type="file" accept=".pdf,.doc,.docx,.ppt,.pptx,.jpg,.jpeg,.png,.gif" onChange={(e) => handleMediaUpload(idx, e.target.files[0])} />
-                                {exp.media instanceof File && (
-                                  <p className="text-xs text-gray-500">{exp.media.name}</p>
-                                )}
-                                {exp.media instanceof File && (
-                                  <img
-                                    src={URL.createObjectURL(exp.media)}
-                                    alt="preview"
-                                    className="h-20 rounded"
-                                  />
+                                {exp.media && (
+                                  <div className="mt-2">
+                                    {typeof exp.media === "string" &&
+                                    exp.media.toLowerCase().includes(".pdf") ? (
+                                      <div
+                                        className="text-blue-600 cursor-pointer hover:underline"
+                                        onClick={() => window.open(exp.media, "_blank")}
+                                      >
+                                        📄 {exp.media.split("/").pop()}
+                                      </div>
+                                    ) : typeof exp.media === "string" ? (
+                                      <img
+                                        src={exp.media}
+                                        alt="experience"
+                                        className="h-20 w-20 object-cover rounded cursor-pointer border"
+                                        onClick={() => setPreviewMedia(exp.media)}
+                                      />
+                                    ) : null}
+                                  </div>
                                 )}
                               </div>
                             </div>
@@ -842,6 +915,37 @@ const sendEmailChangeRequest = async () => {
                         );
                       })
                     ) : <div className="text-gray-500 text-sm">No experience added yet. Click “Add Experience” to get started.</div>}
+                  </div>
+                  {/* Image Preview Modal */}
+                  {previewMedia && (
+                    <div
+                      className="fixed inset-0 bg-black/70 flex items-center justify-center z-50"
+                      onClick={() => setPreviewMedia(null)}
+                    >
+                      <img
+                        src={previewMedia}
+                        alt="Full Preview"
+                        className="max-h-[90%] max-w-[90%] rounded-lg shadow-lg"
+                      />
+                    </div>
+                  )}
+                  {/* Bottom Action Buttons */}
+                  <div className="mt-6 pt-4 border-t flex justify-end gap-3">
+                    <button
+                      type="button"
+                      onClick={handleSaveExperienceChanges}
+                      className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition"
+                    >
+                      Save Changes
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setShowAddExperience(true)}
+                      className="px-4 py-2 bg-cyan-600 text-white rounded-md hover:bg-cyan-700 transition"
+                    >
+                      + Add Experience
+                    </button>
                   </div>
                 </div>
 

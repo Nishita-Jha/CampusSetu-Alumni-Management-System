@@ -118,35 +118,111 @@ router.delete("/photo", authMiddleware, async (req, res) => {
   }
 });
 
-/* ---------------------- UPDATE EXPERIENCE ---------------------- */
-router.put("/experience", authMiddleware, async (req, res) => {
-  try {
-    const { experience } = req.body;
+/* ---------------------- EXPERIENCE MULTER ---------------------- */
+const experienceStorage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    const uploadDir = path.join(process.cwd(), "uploads/experience");
+    if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
+    cb(null, uploadDir);
+  },
+  filename: (req, file, cb) => {
+    const ext = path.extname(file.originalname);
+    cb(null, `${req.user._id}_exp_${Date.now()}${ext}`);
+  },
+});
 
-    if (!Array.isArray(experience)) {
-      return res.status(400).json({
-        message: "Experience must be an array",
+const experienceUpload = multer({
+  storage: experienceStorage,
+  limits: { fileSize: 5 * 1024 * 1024 },
+  fileFilter: (req, file, cb) => {
+    const allowed = /jpeg|jpg|png|pdf/;
+    const validExt = allowed.test(path.extname(file.originalname).toLowerCase());
+    const validMime =
+      allowed.test(file.mimetype) ||
+      file.mimetype === "application/pdf";
+
+    validExt && validMime
+      ? cb(null, true)
+      : cb(new Error("Only JPG, PNG, PDF allowed"));
+  },
+});
+
+/* ---------------------- UPDATE EXPERIENCE ---------------------- */
+router.put(
+  "/experience",
+  authMiddleware,
+  experienceUpload.single("media"),
+  async (req, res) => {
+    try {
+      const user = await User.findById(req.user._id);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      const {
+        _id,   // 👈 VERY IMPORTANT
+        title,
+        company,
+        location,
+        startDate,
+        endDate,
+        description,
+      } = req.body;
+
+      let mediaURL = "";
+
+      if (req.file) {
+        mediaURL = `${req.protocol}://${req.get(
+          "host"
+        )}/uploads/experience/${req.file.filename}`;
+      }
+
+      // ✅ UPDATE EXISTING EXPERIENCE
+      if (_id) {
+        const expIndex = user.experience.findIndex(
+          (exp) => exp._id.toString() === _id
+        );
+
+        if (expIndex === -1) {
+          return res.status(404).json({ message: "Experience not found" });
+        }
+
+        user.experience[expIndex] = {
+          ...user.experience[expIndex]._doc,
+          title,
+          company,
+          location,
+          startDate,
+          endDate,
+          description,
+          media: mediaURL || user.experience[expIndex].media,
+        };
+      } else {
+        // ✅ CREATE NEW EXPERIENCE
+        user.experience.push({
+          title,
+          company,
+          location,
+          startDate,
+          endDate,
+          description,
+          media: mediaURL,
+        });
+      }
+
+      await user.save();
+
+      res.status(200).json({
+        message: "Experience saved successfully",
+        experience: user.experience,
+      });
+    } catch (err) {
+      console.error("❌ Error saving experience:", err);
+      res.status(500).json({
+        message: "Server error while saving experience",
       });
     }
-
-    const user = await User.findById(req.user._id);
-    if (!user) {
-      return res.status(404).json({ message: "User not found" });
-    }
-
-    user.experience = experience; // matches schema exactly
-    await user.save();
-
-    res.status(200).json({
-      message: "Experience updated successfully",
-      experience: user.experience,
-    });
-  } catch (err) {
-    console.error("❌ Error updating experience:", err);
-    res.status(500).json({
-      message: "Server error while updating experience",
-    });
   }
-});
+);
 
 export default router;

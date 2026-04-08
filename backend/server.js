@@ -7,7 +7,6 @@ import { Server } from "socket.io";
 import cookieParser from "cookie-parser";
 import path from "path";
 import { fileURLToPath } from "url";
-
 import { connectDB } from "./config.js";
 import authRoutes from "./routes/authRoutes.js";
 import profileRoutes from "./routes/profileRoutes.js";
@@ -26,16 +25,26 @@ import donationRoutes from "./routes/donationRoutes.js";
 // import paymentRoutes from "./routes/paymentRoutes.js";
 import mentorRoutes from "./routes/mentor.js"; 
 
-
 dotenv.config();
 connectDB();
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-
-
 const app = express();
 const server = http.createServer(app);
+import multer from "multer";
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, "uploads/");
+  },
+  filename: function (req, file, cb) {
+    const uniqueName = Date.now() + path.extname(file.originalname);
+    cb(null, uniqueName);
+  },
+});
+
+const upload = multer({ storage });
+
 
 // ✅ Socket.IO setup
 const io = new Server(server, {
