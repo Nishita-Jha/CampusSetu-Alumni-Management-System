@@ -50,7 +50,10 @@ const upload = multer({ storage });
 // ✅ Socket.IO
 const io = new Server(server, {
   cors: {
-    origin: ["http://localhost:5173"],
+    origin: [
+      "http://localhost:5173",
+      "https://campussetu-alumni-management-system.onrender.com"
+    ],
     credentials: true,
   },
 });
@@ -60,7 +63,10 @@ app.set("io", io);
 // ✅ Middleware
 app.use(
   cors({
-    origin: ["http://localhost:5173"],
+    origin: [
+      "http://localhost:5173",
+      "https://campussetu-alumni-management-system.onrender.com"
+    ],
     credentials: true,
   })
 );

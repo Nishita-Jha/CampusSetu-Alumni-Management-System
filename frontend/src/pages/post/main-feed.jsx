@@ -40,14 +40,14 @@ export function MainFeed() {
     const fetchData = async () => {
       try {
         setLoading(true);
-        const me = await axios.get("http://localhost:5000/api/auth/me", {
+        const me = await axios.get("https://campussetu-alumni-management-system.onrender.com/api/auth/me", {
           withCredentials: true,
         });
         setCurrentUser(me.data);
 
         const [postsRes, followRes] = await Promise.all([
-          axios.get("http://localhost:5000/api/posts", { withCredentials: true }),
-          axios.get("http://localhost:5000/api/follow/following", {
+          axios.get("https://campussetu-alumni-management-system.onrender.com/api/posts", { withCredentials: true }),
+          axios.get("https://campussetu-alumni-management-system.onrender.com/api/follow/following", {
             withCredentials: true,
           }),
         ]);
@@ -74,7 +74,7 @@ export function MainFeed() {
       const isFollowing = followingUsers.includes(userId);
       const route = isFollowing ? "unfollow" : "follow";
       await axios.post(
-        `http://localhost:5000/api/follow/${route}/${userId}`,
+        `https://campussetu-alumni-management-system.onrender.com/api/follow/${route}/${userId}`,
         {},
         { withCredentials: true }
       );
@@ -103,13 +103,13 @@ export function MainFeed() {
       let res;
       if (editMode) {
         res = await axios.put(
-          `http://localhost:5000/api/posts/${editPostId}`,
+          `https://campussetu-alumni-management-system.onrender.com/api/posts/${editPostId}`,
           formData,
           { withCredentials: true }
         );
         alert("✅ Post updated!");
       } else {
-        res = await axios.post("http://localhost:5000/api/posts", formData, {
+        res = await axios.post("https://campussetu-alumni-management-system.onrender.com/api/posts", formData, {
           withCredentials: true,
         });
         alert("✅ Post created!");
@@ -144,7 +144,7 @@ export function MainFeed() {
   const handleDeletePost = async (id) => {
     if (!window.confirm("Are you sure you want to delete this post?")) return;
     try {
-      await axios.delete(`http://localhost:5000/api/posts/${id}`, {
+      await axios.delete(`https://campussetu-alumni-management-system.onrender.com/api/posts/${id}`, {
         withCredentials: true,
       });
       setPosts(posts.filter((p) => p._id !== id));
@@ -157,7 +157,7 @@ export function MainFeed() {
   const handleRepost = async (id) => {
     try {
       const res = await axios.post(
-        `http://localhost:5000/api/posts/repost/${id}`,
+        `https://campussetu-alumni-management-system.onrender.com/api/posts/repost/${id}`,
         {},
         { withCredentials: true }
       );
@@ -175,7 +175,7 @@ export function MainFeed() {
   if (!query.trim()) {
     try {
       const postsRes = await axios.get(
-        "http://localhost:5000/api/posts",
+        "https://campussetu-alumni-management-system.onrender.com/api/posts",
         { withCredentials: true }
       );
       setPosts(postsRes.data);
@@ -187,7 +187,7 @@ export function MainFeed() {
 
   try {
     const res = await axios.get(
-      `http://localhost:5000/api/posts/semantic-search?q=${query}`,
+      `https://campussetu-alumni-management-system.onrender.com/api/posts/semantic-search?q=${query}`,
       { withCredentials: true }
     );
 

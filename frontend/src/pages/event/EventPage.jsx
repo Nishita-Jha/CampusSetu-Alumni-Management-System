@@ -34,7 +34,7 @@ export default function EventPage() {
   useEffect(() => {
     const fetchCurrentUser = async () => {
       try {
-        const res = await axios.get("http://localhost:5000/api/auth/me", {
+        const res = await axios.get("https://campussetu-alumni-management-system.onrender.com/api/auth/me", {
           withCredentials: true,
         });
         setCurrentUser(res.data);
@@ -50,7 +50,7 @@ export default function EventPage() {
   // ✅ Fetch events
   const fetchEvents = async () => {
     try {
-      const res = await axios.get("http://localhost:5000/api/events", {
+      const res = await axios.get("https://campussetu-alumni-management-system.onrender.com/api/events", {
         withCredentials: true,
       });
       setEvents(res.data);
@@ -88,7 +88,7 @@ export default function EventPage() {
       formData.append("seats", seats);
       if (image) formData.append("image", image);
 
-      await axios.post("http://localhost:5000/api/events", formData, {
+      await axios.post("https://campussetu-alumni-management-system.onrender.com/api/events", formData, {
         withCredentials: true,
         headers: { "Content-Type": "multipart/form-data" },
       });
@@ -110,7 +110,7 @@ export default function EventPage() {
   const participate = async (id) => {
     try {
       await axios.post(
-        `http://localhost:5000/api/events/${id}/participate`,
+        `https://campussetu-alumni-management-system.onrender.com/api/events/${id}/participate`,
         {},
         { withCredentials: true }
       );
@@ -123,7 +123,7 @@ export default function EventPage() {
   const cancelParticipation = async (id) => {
     try {
       await axios.post(
-        `http://localhost:5000/api/events/${id}/cancel`,
+        `https://campussetu-alumni-management-system.onrender.com/api/events/${id}/cancel`,
         {},
         { withCredentials: true }
       );
@@ -137,7 +137,7 @@ export default function EventPage() {
   const deleteEvent = async (id) => {
     if (!window.confirm("Are you sure you want to delete this event?")) return;
     try {
-      await axios.delete(`http://localhost:5000/api/events/${id}`, {
+      await axios.delete(`https://campussetu-alumni-management-system.onrender.com/api/events/${id}`, {
         withCredentials: true,
       });
       fetchEvents();
@@ -150,7 +150,7 @@ export default function EventPage() {
   const viewParticipants = async (eventId, title) => {
     try {
       const res = await axios.get(
-        `http://localhost:5000/api/events/${eventId}/participants`,
+        `https://campussetu-alumni-management-system.onrender.com/api/events/${eventId}/participants`,
         { withCredentials: true }
       );
       setParticipants(res.data || []);

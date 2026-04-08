@@ -82,14 +82,14 @@ export default function RightSidebar() {
   // Fetch reminders for all users
   useEffect(() => {
     axios
-      .get("http://localhost:5000/api/reminders")
+      .get("https://campussetu-alumni-management-system.onrender.com/api/reminders")
       .then((res) => setReminders(res.data))
       .catch(() => setReminders([]));
   }, []);
 
   useEffect(() => {
     axios
-      .get("http://localhost:5000/api/auth/me", { withCredentials: true })
+      .get("https://campussetu-alumni-management-system.onrender.com/api/auth/me", { withCredentials: true })
       .then((res) => setCurrentUser(res.data))
       .catch(() => setCurrentUser(null));
   }, []);
@@ -101,7 +101,7 @@ export default function RightSidebar() {
       setLoading(true);
       try {
         const res = await axios.get(
-          "http://localhost:5000/api/email-change-requests",
+          "https://campussetu-alumni-management-system.onrender.com/api/email-change-requests",
           { withCredentials: true }
         );
         const pending = res.data.filter((r) => r.status === "pending");
@@ -121,7 +121,7 @@ export default function RightSidebar() {
   const handleAction = useCallback(async (id, action) => {
     try {
       const res = await axios.put(
-        `http://localhost:5000/api/email-change-requests/${id}`,
+        `https://campussetu-alumni-management-system.onrender.com/api/email-change-requests/${id}`,
         { action },
         { withCredentials: true }
       );
@@ -158,7 +158,7 @@ export default function RightSidebar() {
 
       if (existing) {
         const res = await axios.put(
-          `http://localhost:5000/api/reminders/${existing._id}`,
+          `https://campussetu-alumni-management-system.onrender.com/api/reminders/${existing._id}`,
           { message: reminderText }
         );
 
@@ -169,7 +169,7 @@ export default function RightSidebar() {
         alert("Reminder updated!");
       } else {
         // NEW reminder
-        const res = await axios.post("http://localhost:5000/api/reminders", {
+        const res = await axios.post("https://campussetu-alumni-management-system.onrender.com/api/reminders", {
           date: selectedDate,
           message: reminderText,
           userId: currentUser?._id,
@@ -489,7 +489,7 @@ export default function RightSidebar() {
 
                   try {
                     await axios.delete(
-                      `http://localhost:5000/api/reminders/${viewOnlyReminder._id}`
+                      `https://campussetu-alumni-management-system.onrender.com/api/reminders/${viewOnlyReminder._id}`
                     );
 
                     // Remove from all states that rely on reminders
