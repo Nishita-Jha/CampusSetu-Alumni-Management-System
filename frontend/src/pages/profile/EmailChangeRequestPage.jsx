@@ -42,7 +42,7 @@ export default function EmailChangeRequest() {
       console.log("Submitting payload:", payload);
 
       const res = await axios.post(
-        "https://campussetu-alumni-management-system.onrender.com/api/email-change-requests",
+        "/api/email-change-requests",
         payload,
         { 
           withCredentials: true,

@@ -122,7 +122,7 @@ const sendEmailChangeRequest = async () => {
   try {
     if (!requestedEmail) return alert("Please provide the new email");
     await axios.post(
-      "https://campussetu-alumni-management-system.onrender.com/api/email-change-requests",
+      "/api/email-change-requests",
       { requestedEmail, reason: requestReason },
       { withCredentials: true }
     );
@@ -251,7 +251,7 @@ const sendEmailChangeRequest = async () => {
     formData.append("photo", file);
     try {
       setLoading(true);
-      const res = await axios.put("https://campussetu-alumni-management-system.onrender.com/api/profile/photo", formData, {
+      const res = await axios.put("/api/profile/photo", formData, {
         withCredentials: true,
         headers: { "Content-Type": "multipart/form-data" },
       });
@@ -280,7 +280,7 @@ const sendEmailChangeRequest = async () => {
   const handleRemovePhoto = async () => {
     try {
       setLoading(true);
-      const res = await axios.delete("https://campussetu-alumni-management-system.onrender.com/api/profile/photo", {
+      const res = await axios.delete("/api/profile/photo", {
         withCredentials: true,
       });
 
@@ -314,7 +314,7 @@ const sendEmailChangeRequest = async () => {
       }
 
       const res = await axios.put(
-        "https://campussetu-alumni-management-system.onrender.com/api/profile/details",
+        "/api/profile/details",
         payload,
         { withCredentials: true }
       );
@@ -342,7 +342,7 @@ const sendEmailChangeRequest = async () => {
     const fetchProfile = async () => {
       try {
         setLoading(true);
-        const res = await axios.get("https://campussetu-alumni-management-system.onrender.com/api/profile", {
+        const res = await axios.get("/api/profile", {
           withCredentials: true,
         });
 
@@ -407,7 +407,7 @@ const sendEmailChangeRequest = async () => {
       }
 
       await axios.put(
-        "https://campussetu-alumni-management-system.onrender.com/api/profile/experience",
+        "/api/profile/experience",
         formData,
         {
           withCredentials: true,
@@ -453,7 +453,7 @@ const sendEmailChangeRequest = async () => {
       });
 
       await axios.put(
-        "https://campussetu-alumni-management-system.onrender.com/api/profile/experience",
+        "/api/profile/experience",
         formData,
         {
           withCredentials: true,

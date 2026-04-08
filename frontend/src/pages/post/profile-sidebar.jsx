@@ -32,7 +32,7 @@ export function ProfileSidebar() {
     const fetchProfile = async () => {
       try {
         setLoading(true);
-        const res = await axios.get("https://campussetu-alumni-management-system.onrender.com/api/profile", {
+        const res = await axios.get("/api/profile", {
           withCredentials: true,
         });
 

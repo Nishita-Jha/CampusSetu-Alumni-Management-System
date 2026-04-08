@@ -20,7 +20,7 @@ export default function LoginForm({ onToggle }) {
     setError("");
     axios
       .post(
-        "https://campussetu-alumni-management-system.onrender.com/api/auth/login",
+        "/api/auth/login",
         { identifier: form.identifier, password: form.password },
         { withCredentials: true }
       )

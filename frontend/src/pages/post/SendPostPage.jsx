@@ -14,7 +14,7 @@ export default function SendPostPage() {
   useEffect(() => {
     const fetchUsers = async () => {
       try {
-        const res = await axios.get("https://campussetu-alumni-management-system.onrender.com/api/follow/all", {
+        const res = await axios.get("/api/follow/all", {
           withCredentials: true,
         });
         setUsers(res.data.users);
@@ -29,7 +29,7 @@ export default function SendPostPage() {
   const handleSendPost = async (recipientId) => {
     try {
       await axios.post(
-        "https://campussetu-alumni-management-system.onrender.com/api/send-post/send-post", // ✅ simplified route
+        "/api/send-post/send-post", // ✅ simplified route
         {
           postId,
           recipients: [recipientId],

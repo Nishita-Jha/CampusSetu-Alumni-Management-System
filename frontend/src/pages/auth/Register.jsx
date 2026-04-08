@@ -52,7 +52,7 @@ export default function RegisterForm({ onToggle }) {
 
 
       const res = await axios.post(
-        "https://campussetu-alumni-management-system.onrender.com/api/auth/register",
+        "/api/auth/register",
         payload,
         { withCredentials: true }
       );

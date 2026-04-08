@@ -42,7 +42,7 @@ export default function ViewProfile() {
       try {
         setLoading(true);
         const response = await axios.get(
-          `https://campussetu-alumni-management-system.onrender.com/api/auth/profile/${id}`,
+          `/api/auth/profile/${id}`,
           { withCredentials: true }
         );
         setProfile(response.data);

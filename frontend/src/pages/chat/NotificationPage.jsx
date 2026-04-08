@@ -14,7 +14,7 @@ export default function NotificationPage() {
   useEffect(() => {
     const fetchCurrentUser = async () => {
       try {
-        const res = await axios.get("https://campussetu-alumni-management-system.onrender.com/api/auth/me", {
+        const res = await axios.get("/api/auth/me", {
           withCredentials: true,
         });
         if (!res.data?._id || !res.data?.username) {
@@ -32,7 +32,7 @@ export default function NotificationPage() {
   useEffect(() => {
     const fetchNotifications = async () => {
       try {
-        const res = await axios.get("https://campussetu-alumni-management-system.onrender.com/api/notifications", {
+        const res = await axios.get("/api/notifications", {
           withCredentials: true,
         });
         const sortedNotifications = res.data.sort(
@@ -43,7 +43,7 @@ export default function NotificationPage() {
         // ✅ Mark all as read
         axios
           .put(
-            "https://campussetu-alumni-management-system.onrender.com/api/notifications/mark-read",
+            "/api/notifications/mark-read",
             {},
             { withCredentials: true }
           )

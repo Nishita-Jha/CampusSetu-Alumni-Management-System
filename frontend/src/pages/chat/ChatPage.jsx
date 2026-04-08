@@ -25,7 +25,7 @@ export default function ChatPage({ alumniId, chatId, onBack }) {
   useEffect(() => {
     const fetchCurrentUser = async () => {
       try {
-        const res = await axios.get("https://campussetu-alumni-management-system.onrender.com/api/auth/me", {
+        const res = await axios.get("/api/auth/me", {
           withCredentials: true,
         });
         setCurrentUser(res.data);
@@ -38,7 +38,7 @@ export default function ChatPage({ alumniId, chatId, onBack }) {
   }, []);
 
   useEffect(() => {
-    const newSocket = io("https://campussetu-alumni-management-system.onrender.com");
+    const newSocket = io("");
     setSocket(newSocket);
     return () => newSocket.disconnect();
   }, []);
@@ -50,12 +50,12 @@ export default function ChatPage({ alumniId, chatId, onBack }) {
       let res;
       if (alumniId) {
         res = await axios.post(
-          `https://campussetu-alumni-management-system.onrender.com/api/chat/start/${alumniId}`,
+          `/api/chat/start/${alumniId}`,
           {},
           { withCredentials: true }
         );
       } else if (chatId) {
-        res = await axios.get(`https://campussetu-alumni-management-system.onrender.com/api/chat/${chatId}`, {
+        res = await axios.get(`/api/chat/${chatId}`, {
           withCredentials: true,
         });
       }

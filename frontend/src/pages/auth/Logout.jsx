@@ -9,7 +9,7 @@ export default function Logout() {
     const logout = async () => {
       try {
         await axios.post(
-          "https://campussetu-alumni-management-system.onrender.com/api/auth/logout",
+          "/api/auth/logout",
           {},
           { withCredentials: true } // ✅ include cookies
         );
