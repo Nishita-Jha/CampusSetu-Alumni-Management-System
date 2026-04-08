@@ -19,20 +19,23 @@ import adminRoutes from "./routes/adminRoutes.js";
 import sendPostRoutes from "./routes/sendPostRoutes.js";
 import Message from "./models/Message.js";
 import Notification from "./models/Notification.js";
-import emailChangeRoutes from './routes/emailChangeRoutes.js';
-import remindersRoutes from './routes/reminders.js'; 
+import emailChangeRoutes from "./routes/emailChangeRoutes.js";
+import remindersRoutes from "./routes/reminders.js";
 import donationRoutes from "./routes/donationRoutes.js";
-// import paymentRoutes from "./routes/paymentRoutes.js";
-import mentorRoutes from "./routes/mentor.js"; 
+import mentorRoutes from "./routes/mentor.js";
+
+import multer from "multer";
 
 dotenv.config();
 connectDB();
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+
 const app = express();
 const server = http.createServer(app);
-import multer from "multer";
+
+// ✅ Multer config
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
     cb(null, "uploads/");
@@ -42,13 +45,14 @@ const storage = multer.diskStorage({
     cb(null, uniqueName);
   },
 });
-
 const upload = multer({ storage });
 
-
-// ✅ Socket.IO setup
+// ✅ Socket.IO
 const io = new Server(server, {
-  cors: { origin: "http://localhost:5173", credentials: true },
+  cors: {
+    origin: ["http://localhost:5173"],
+    credentials: true,
+  },
 });
 
 app.set("io", io);
@@ -56,17 +60,15 @@ app.set("io", io);
 // ✅ Middleware
 app.use(
   cors({
-    origin: "http://localhost:5173",
+    origin: ["http://localhost:5173"],
     credentials: true,
   })
 );
+
 app.use(express.json());
 app.use(cookieParser());
-app.get("/", (req, res) => {
-  res.send("🚀 CampusSetu Backend is Running Successfully!");
-});
 
-// ✅ Serve uploaded images statically
+// ✅ Static uploads
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
 // ✅ API Routes
@@ -79,13 +81,24 @@ app.use("/api/notifications", notificationRoutes);
 app.use("/api/events", eventRoutes);
 app.use("/api/send-post", sendPostRoutes);
 app.use("/api/admin", adminRoutes);
-app.use('/api/email-change-requests', emailChangeRoutes);
-app.use("/api/reminders", remindersRoutes);  
+app.use("/api/email-change-requests", emailChangeRoutes);
+app.use("/api/reminders", remindersRoutes);
 app.use("/api/donation", donationRoutes);
-// app.use("/api/payment", paymentRoutes);
-app.use("/uploads", express.static("uploads")); 
 app.use("/api/mentors", mentorRoutes);
 
+// ===============================
+// ✅ ✅ SERVE FRONTEND (IMPORTANT)
+// ===============================
+
+// Serve React build (dist folder)
+app.use(express.static(path.join(__dirname, "dist")));
+
+// Catch-all for React routing
+app.get("*", (req, res) => {
+  res.sendFile(path.join(__dirname, "dist", "index.html"));
+});
+
+// ===============================
 
 // ✅ Socket.IO Events
 io.on("connection", (socket) => {
@@ -93,22 +106,15 @@ io.on("connection", (socket) => {
 
   socket.on("join_user", (userId) => {
     socket.join(userId);
-    console.log(`👤 User ${userId} joined their personal room`);
   });
 
   socket.on("join_chat", (chatId) => {
     socket.join(chatId);
-    console.log(`💬 Socket ${socket.id} joined chat room ${chatId}`);
   });
 
-  // 💬 Chat message handling
   socket.on("send_message", async (data) => {
     try {
       const { chatId, senderId, senderName, text, recipientId } = data;
-      if (!chatId || !senderId || !recipientId) {
-        console.error("❌ Missing required fields in send_message");
-        return;
-      }
 
       const savedMessage = await Message.create({
         chat: chatId,
@@ -131,6 +137,7 @@ io.on("connection", (socket) => {
         text: `💬 New message from ${senderName}`,
         type: "chat",
       });
+
       await notif.save();
 
       io.to(recipientId.toString()).emit("notification", {
@@ -140,14 +147,11 @@ io.on("connection", (socket) => {
         text: notif.text,
         type: "chat",
       });
-
-      console.log(`📩 Message ${senderId} → ${recipientId} saved & notified`);
     } catch (err) {
-      console.error("💥 Error in send_message:", err);
+      console.error(err);
     }
   });
 
-  // 📢 Broadcast event notifications to all users
   socket.on("broadcast_event", async (data) => {
     try {
       const { title, description, creatorName } = data;
@@ -165,20 +169,20 @@ io.on("connection", (socket) => {
         title,
         description,
         creatorName,
-        message: `📢 New event: ${title} by ${creatorName}`,
+        message: `📢 New event: ${title}`,
       });
-
-      console.log(`📣 Event notification broadcasted for ${title}`);
     } catch (err) {
-      console.error("💥 Error in broadcast_event:", err);
+      console.error(err);
     }
   });
 
   socket.on("disconnect", () => {
-    console.log(`❌ User disconnected: ${socket.id}`);
+    console.log("❌ User disconnected:", socket.id);
   });
 });
 
 // ✅ Start Server
 const PORT = process.env.PORT || 5000;
-server.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
+server.listen(PORT, () =>
+  console.log(`🚀 Server running on port ${PORT}`)
+);
