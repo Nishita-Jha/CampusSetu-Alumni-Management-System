@@ -104,4 +104,14 @@ npm run dev
 
 ---
 
+## 🌐 Live Deployment
+
+The project is deployed on Render and can be accessed here:
+
+🚀 https://campussetu-alumni-management-system.onrender.com
+
+Users can directly explore the application and its features through the live deployment.
+
+---
+
 **⭐ If you found this project helpful, feel free to star the repository !!**
